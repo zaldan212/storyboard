@@ -562,28 +562,19 @@ async function generateStoryboard() {
     setUI('loading');
     const loaderTimer = cycleLoader();
 
-    const systemPrompt = `Kamu adalah seorang Creative Director & Storyboard Expert spesialis konten iklan digital. Tugas kamu adalah membuat Master Storyboard yang detail dan kreatif untuk kampanye iklan.
+    const systemPrompt = `You are a Creative Director and Storyboard Expert for digital advertising campaigns.
 
-PENTING: Balas HANYA dengan JSON yang valid. Tidak ada teks di luar JSON. Format yang tepat:
+CRITICAL: You must respond with ONLY a valid JSON object. No markdown, no backticks, no explanation text before or after. Just pure JSON.
 
-{
-  "scenes": [
-    {
-      "title": "judul scene",
-      "duration": "durasi dalam detik, contoh: 0-3 dtk",
-      "visual": "deskripsi visual sinematik yang detail",
-      "direction": "arahan kamera dan teknik sinematografi"
-    }
-  ],
-  "voiceover": "teks voice over lengkap dengan jeda [Pause] yang natural, harus persuasif dan sesuai brand",
-  "prompts": {
-    "midjourney": "prompt Midjourney/VEO3 yang detail dan teknikal untuk scene utama",
-    "runway": "prompt Runway Gen3/Kling AI untuk scene motion",
-    "stable_diffusion": "prompt Stable Diffusion dengan tags quality"
-  }
-}
+Required JSON structure:
+{"scenes":[{"title":"string","duration":"string","visual":"string","direction":"string"}],"voiceover":"string","prompts":{"midjourney":"string","runway":"string","stable_diffusion":"string"}}
 
-Buat 5-6 scenes yang mengikuti struktur: Hook → Problem/Desire → Solution → Benefit → Social Proof → CTA.`;
+Rules:
+- scenes: array of 5 objects with Hook, Problem, Solution, Benefit, CTA
+- voiceover: persuasive Indonesian text with [Pause] markers
+- prompts: detailed image generation prompts in English
+- All values must be strings, no nested objects or arrays
+- Do NOT include any text outside the JSON object`;
 
     const userPrompt = `Buat storyboard untuk kampanye berikut:
 
@@ -627,10 +618,14 @@ Buat storyboard yang kreatif, cinematic, dan sesuai karakter brand. Setiap scene
 
         let parsed;
         try {
-            const cleaned = rawText.replace(/```json|```/g, '').trim();
+            // Strip markdown, find JSON object
+            let cleaned = rawText.replace(/```json|```/g, '').trim();
+            // Extract JSON object if surrounded by text
+            const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+            if (jsonMatch) cleaned = jsonMatch[0];
             parsed = JSON.parse(cleaned);
         } catch (e) {
-            throw new Error('Gagal parse respons AI. Coba generate ulang.');
+            throw new Error('Gagal parse respons AI. Coba generate ulang. Detail: ' + rawText.substring(0, 100));
         }
 
         renderOutput(parsed, { product, brand, audience, platform });
