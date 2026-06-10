@@ -132,6 +132,8 @@
         border-radius: 6px;
         object-fit: cover;
         display: none;
+        pointer-events: none;
+        flex-shrink: 0;
     }
 
     input[type="text"], textarea, select {
@@ -586,14 +588,26 @@ function handleUpload(type) {
     const textEl = document.getElementById(type + 'UploadText');
     const file = fileInput.files[0];
     if (!file) return;
-    textEl.textContent = file.name;
+
+    // Shorten filename if too long
+    const name = file.name.length > 20 ? file.name.substring(0, 18) + '...' : file.name;
+    textEl.textContent = name;
+
     const reader = new FileReader();
     reader.onload = e => {
-        preview.src = e.target.result;
-        preview.style.display = 'block';
+        preview.setAttribute('src', e.target.result);
+        preview.style.display = 'inline-block';
     };
     reader.readAsDataURL(file);
 }
+
+// Prevent preview image from blocking clicks on upload div
+document.addEventListener('DOMContentLoaded', () => {
+    ['productPreview','modelPreview'].forEach(id => {
+        const img = document.getElementById(id);
+        if (img) img.addEventListener('click', e => e.stopPropagation());
+    });
+});
 
 function cycleLoader() {
     let idx = 0;
