@@ -623,23 +623,14 @@ Buat storyboard yang kreatif, cinematic, dan sesuai karakter brand. Setiap scene
             throw new Error('Respons tidak valid dari server: ' + JSON.stringify(data).substring(0, 200));
         }
 
-        let parsed;
-        try {
-            // Try JSON first
-            let cleaned = rawText.replace(/```json|```/g, '').trim();
-            const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                parsed = JSON.parse(jsonMatch[0]);
-            } else {
-                // Fallback: parse markdown text into structured format
-                parsed = parseMarkdownToStoryboard(rawText);
-            }
-        } catch (e) {
-            try {
-                parsed = parseMarkdownToStoryboard(rawText);
-            } catch(e2) {
-                throw new Error('Raw AI response: ' + rawText.substring(0, 300));
-            }
+        // Try to parse JSON, fallback to markdown parser
+        let parsed = null;
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            try { parsed = JSON.parse(jsonMatch[0]); } catch(e) {}
+        }
+        if (!parsed) {
+            parsed = parseMarkdownToStoryboard(rawText);
         }
 
         renderOutput(parsed, { product, brand, audience, platform });
