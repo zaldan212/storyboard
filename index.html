@@ -129,7 +129,6 @@
         height: 36px;
         border-radius: 6px;
         object-fit: cover;
-        display: none;
         flex-shrink: 0;
     }
 
@@ -504,17 +503,17 @@
         <div class="card">
             <h3>📁 Asset Manager</h3>
             <div class="upload-group">
-                <label class="upload-zone" for="productFile">
-                    <img id="productPreview" style="width:36px;height:36px;border-radius:6px;object-fit:cover;display:none;flex-shrink:0">
+                <div class="upload-zone" onclick="document.getElementById('productFile').click()">
+                    <img id="productPreview" style="display:none">
                     <span id="productUploadText">🖼️ Upload Visual Produk</span>
-                </label>
-                <input type="file" accept="image/*" id="productFile" style="display:none" onchange="handleUpload(this,'productPreview','productUploadText')">
+                </div>
+                <input type="file" accept="image/*" id="productFile" style="position:absolute;left:-9999px">
 
-                <label class="upload-zone" for="modelFile">
-                    <img id="modelPreview" style="width:36px;height:36px;border-radius:6px;object-fit:cover;display:none;flex-shrink:0">
+                <div class="upload-zone" onclick="document.getElementById('modelFile').click()">
+                    <img id="modelPreview" style="display:none">
                     <span id="modelUploadText">👤 Upload Model Referensi</span>
-                </label>
-                <input type="file" accept="image/*" id="modelFile" style="display:none" onchange="handleUpload(this,'modelPreview','modelUploadText')">
+                </div>
+                <input type="file" accept="image/*" id="modelFile" style="position:absolute;left:-9999px">
             </div>
 
             <h3>🎯 Campaign Builder</h3>
@@ -591,6 +590,16 @@ function handleUpload(input, previewId, textId) {
     };
     reader.readAsDataURL(file);
 }
+
+// Attach change events after DOM ready
+window.addEventListener('load', function() {
+    document.getElementById('productFile').addEventListener('change', function() {
+        handleUpload(this, 'productPreview', 'productUploadText');
+    });
+    document.getElementById('modelFile').addEventListener('change', function() {
+        handleUpload(this, 'modelPreview', 'modelUploadText');
+    });
+});
 
 function cycleLoader() {
     let idx = 0;
