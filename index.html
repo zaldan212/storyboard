@@ -505,18 +505,18 @@
         <div class="card">
             <h3>📁 Asset Manager</h3>
             <div class="upload-group">
-                <label class="upload" id="productUploadLabel">
+                <div class="upload" id="productUploadLabel" onclick="document.getElementById('productFile').click()">
+                    <img class="preview-img" id="productPreview">
                     <span>🖼️</span>
                     <span id="productUploadText">Upload Visual Produk</span>
-                    <img class="preview-img" id="productPreview">
-                    <input type="file" accept="image/*" id="productFile" onchange="handleUpload('product')">
-                </label>
-                <label class="upload" id="modelUploadLabel">
+                    <input type="file" accept="image/*" id="productFile" style="display:none" onchange="handleUpload('product')">
+                </div>
+                <div class="upload" id="modelUploadLabel" onclick="document.getElementById('modelFile').click()">
+                    <img class="preview-img" id="modelPreview">
                     <span>👤</span>
                     <span id="modelUploadText">Upload Model Referensi</span>
-                    <img class="preview-img" id="modelPreview">
-                    <input type="file" accept="image/*" id="modelFile" onchange="handleUpload('model')">
-                </label>
+                    <input type="file" accept="image/*" id="modelFile" style="display:none" onchange="handleUpload('model')">
+                </div>
             </div>
 
             <h3>🎯 Campaign Builder</h3>
