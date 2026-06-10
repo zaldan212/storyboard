@@ -643,61 +643,74 @@ Buat storyboard yang kreatif, cinematic, dan sesuai karakter brand. Setiap scene
 }
 
 function parseMarkdownToStoryboard(text) {
-    const scenes = [];
-    const sceneKeywords = ['Hook', 'Problem', 'Struggle', 'Solution', 'Benefit', 'Result', 'CTA', 'Close', 'Scene', 'Opening', 'Reveal'];
-    const lines = text.split('\n').filter(l => l.trim());
+    // Clean markdown symbols
+    const clean = t => t.replace(/[*#_`|]/g, '').replace(/\s+/g, ' ').trim();
+    const lines = text.split('
+').map(l => clean(l)).filter(l => l.length > 3);
+
+    const sceneKeywords = ['hook','problem','masalah','solution','solusi','benefit','manfaat','cta','call to action','scene','opening','reveal','struggle','result'];
     
+    const scenes = [];
     let currentScene = null;
     let voiceover = '';
     let inVO = false;
+    let prompts = { midjourney: '', runway: '', stable_diffusion: '' };
 
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].replace(/[*#_`]/g, '').trim();
-        if (!line) continue;
+    for (const line of lines) {
+        const lower = line.toLowerCase();
 
-        // Detect scene headers
-        const isSceneHeader = sceneKeywords.some(k => line.toLowerCase().includes(k.toLowerCase()) && line.length < 60);
-        const sceneNumMatch = line.match(/^(Scene|SCENE)\s*(\d+)/i);
-        
-        if (isSceneHeader || sceneNumMatch) {
-            if (currentScene && currentScene.visual) scenes.push(currentScene);
-            currentScene = {
-                title: line.replace(/^#+\s*/, '').replace(/Scene \d+:?\s*/i, '').substring(0, 40) || line.substring(0, 40),
-                duration: '',
-                visual: '',
-                direction: ''
-            };
+        // Detect VO section
+        if (lower.match(/voice.?over|narasi|script|naskah/)) { inVO = true; continue; }
+        if (lower.match(/prompt|midjourney|runway|stable/)) { inVO = false; }
+
+        // Detect scene header
+        const isHeader = sceneKeywords.some(k => lower.includes(k)) && line.length < 80;
+        const hasSceneNum = lower.match(/^scene\s*\d/i);
+
+        if (isHeader || hasSceneNum) {
+            if (currentScene && (currentScene.visual || currentScene.direction)) scenes.push(currentScene);
+            const title = line.replace(/scene\s*\d+:?\s*/i, '').replace(/\d+[\.\)]\s*/, '').substring(0, 50);
+            currentScene = { title: title || line.substring(0, 40), duration: '', visual: '', direction: '' };
             inVO = false;
-        } else if (line.match(/voice.?over|VO|narration|script/i)) {
-            inVO = true;
-        } else if (inVO && line.length > 10) {
+        } else if (inVO && line.length > 8) {
             voiceover += line + ' ';
+        } else if (lower.includes('midjourney') || lower.includes('veo')) {
+            const next = lines[lines.indexOf(line) + 1] || '';
+            prompts.midjourney = next;
+        } else if (lower.includes('runway') || lower.includes('kling')) {
+            const next = lines[lines.indexOf(line) + 1] || '';
+            prompts.runway = next;
+        } else if (lower.includes('stable diffusion')) {
+            const next = lines[lines.indexOf(line) + 1] || '';
+            prompts.stable_diffusion = next;
         } else if (currentScene) {
-            if (line.match(/camera|shot|angle|close.?up|wide|zoom|pan|fade/i)) {
+            if (lower.match(/camera|shot|angle|close.up|wide|zoom|pan|fade|kamera|pengambilan/)) {
                 currentScene.direction += line + ' ';
-            } else if (line.match(/duration|sec|detik|timing/i)) {
-                currentScene.duration = line.replace(/.*?[:：]/,'').trim().substring(0, 20);
-            } else if (line.length > 10) {
+            } else if (lower.match(/\d+.*(sec|detik|second)/)) {
+                currentScene.duration = line.substring(0, 25);
+            } else if (line.length > 8) {
                 currentScene.visual += line + ' ';
             }
         }
     }
-    if (currentScene && currentScene.visual) scenes.push(currentScene);
+    if (currentScene && (currentScene.visual || currentScene.direction)) scenes.push(currentScene);
 
-    // Ensure we have at least 5 scenes
+    // Fill missing scenes with defaults
     const defaultTitles = ['Hook', 'Problem', 'Solution', 'Benefit', 'CTA'];
     while (scenes.length < 5) {
-        scenes.push({ title: defaultTitles[scenes.length] || 'Scene ' + (scenes.length+1), duration: '', visual: text.substring(0, 100), direction: '' });
+        const idx = scenes.length;
+        scenes.push({ title: defaultTitles[idx], duration: '', visual: lines[idx * 3] || '', direction: '' });
     }
+
+    // Fill missing prompts
+    if (!prompts.midjourney) prompts.midjourney = 'Cinematic commercial photography, 85mm lens, dramatic lighting, 8k resolution, photorealistic --ar 9:16 --style raw';
+    if (!prompts.runway) prompts.runway = 'High-end commercial scene, professional model showcasing product, realistic motion, 4k cinematic quality';
+    if (!prompts.stable_diffusion) prompts.stable_diffusion = '(masterpiece, best quality:1.2), hyperrealistic product showcase, 85mm lens, sharp focus, volumetric lighting';
 
     return {
         scenes: scenes.slice(0, 6),
-        voiceover: voiceover.trim() || text.substring(0, 200),
-        prompts: {
-            midjourney: 'Cinematic commercial photography, 85mm lens, dramatic lighting, 8k resolution, ultra-detailed, photorealistic --ar 9:16 --style raw',
-            runway: 'High-end commercial scene, professional model showcasing product, realistic motion, 4k cinematic quality, soft studio lighting',
-            stable_diffusion: '(masterpiece, best quality:1.2), hyperrealistic product showcase, 85mm portrait lens, sharp focus, volumetric lighting'
-        }
+        voiceover: voiceover.trim() || lines.slice(0, 5).join(' '),
+        prompts
     };
 }
 
