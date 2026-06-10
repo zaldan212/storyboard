@@ -562,19 +562,26 @@ async function generateStoryboard() {
     setUI('loading');
     const loaderTimer = cycleLoader();
 
-    const systemPrompt = `You are a Creative Director and Storyboard Expert for digital advertising campaigns.
+    const systemPrompt = `You are a JSON API. You only output valid JSON. Never output markdown, never output explanations, never output text outside of JSON.
 
-CRITICAL: You must respond with ONLY a valid JSON object. No markdown, no backticks, no explanation text before or after. Just pure JSON.
+Output exactly this JSON structure and nothing else:
+{
+  "scenes": [
+    {"title": "Hook", "duration": "0-3 sec", "visual": "...", "direction": "..."},
+    {"title": "Problem", "duration": "4-8 sec", "visual": "...", "direction": "..."},
+    {"title": "Solution", "duration": "9-15 sec", "visual": "...", "direction": "..."},
+    {"title": "Benefit", "duration": "16-22 sec", "visual": "...", "direction": "..."},
+    {"title": "CTA", "duration": "23-30 sec", "visual": "...", "direction": "..."}
+  ],
+  "voiceover": "Indonesian persuasive voiceover script with [Pause] markers",
+  "prompts": {
+    "midjourney": "detailed English prompt for Midjourney",
+    "runway": "detailed English prompt for Runway Gen3",
+    "stable_diffusion": "detailed English prompt with quality tags"
+  }
+}
 
-Required JSON structure:
-{"scenes":[{"title":"string","duration":"string","visual":"string","direction":"string"}],"voiceover":"string","prompts":{"midjourney":"string","runway":"string","stable_diffusion":"string"}}
-
-Rules:
-- scenes: array of 5 objects with Hook, Problem, Solution, Benefit, CTA
-- voiceover: persuasive Indonesian text with [Pause] markers
-- prompts: detailed image generation prompts in English
-- All values must be strings, no nested objects or arrays
-- Do NOT include any text outside the JSON object`;
+Replace the ... with actual creative content based on the campaign brief. Do not add any text before or after the JSON.`;
 
     const userPrompt = `Buat storyboard untuk kampanye berikut:
 
