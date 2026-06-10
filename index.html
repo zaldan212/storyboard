@@ -625,7 +625,7 @@ Buat storyboard yang kreatif, cinematic, dan sesuai karakter brand. Setiap scene
             if (jsonMatch) cleaned = jsonMatch[0];
             parsed = JSON.parse(cleaned);
         } catch (e) {
-            throw new Error('Gagal parse respons AI. Coba generate ulang. Detail: ' + rawText.substring(0, 100));
+            throw new Error('Raw AI response: ' + rawText.substring(0, 300));
         }
 
         renderOutput(parsed, { product, brand, audience, platform });
