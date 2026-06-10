@@ -505,16 +505,16 @@
             <h3>📁 Asset Manager</h3>
             <div class="upload-group">
                 <label class="upload-zone" for="productFile">
-                    <img id="productPreview">
+                    <img id="productPreview" style="width:36px;height:36px;border-radius:6px;object-fit:cover;display:none;flex-shrink:0">
                     <span id="productUploadText">🖼️ Upload Visual Produk</span>
                 </label>
-                <input type="file" accept="image/*" id="productFile" style="display:none">
+                <input type="file" accept="image/*" id="productFile" style="display:none" onchange="handleUpload(this,'productPreview','productUploadText')">
 
                 <label class="upload-zone" for="modelFile">
-                    <img id="modelPreview">
+                    <img id="modelPreview" style="width:36px;height:36px;border-radius:6px;object-fit:cover;display:none;flex-shrink:0">
                     <span id="modelUploadText">👤 Upload Model Referensi</span>
                 </label>
-                <input type="file" accept="image/*" id="modelFile" style="display:none">
+                <input type="file" accept="image/*" id="modelFile" style="display:none" onchange="handleUpload(this,'modelPreview','modelUploadText')">
             </div>
 
             <h3>🎯 Campaign Builder</h3>
@@ -578,31 +578,19 @@ const LOADER_MESSAGES = [
     "Membuat prompts gambar..."
 ];
 
-// Upload handler — attached via addEventListener on DOMContentLoaded
-function setupUpload(inputId, previewId, textId) {
-    const input = document.getElementById(inputId);
-    const preview = document.getElementById(previewId);
-    const text = document.getElementById(textId);
-    if (!input) return;
-
-    input.addEventListener('change', function() {
-        const file = this.files[0];
-        if (!file) return;
-        const name = file.name.length > 22 ? file.name.substring(0, 20) + '…' : file.name;
-        text.textContent = name;
-        const reader = new FileReader();
-        reader.onload = e => {
-            preview.src = e.target.result;
-            preview.style.display = 'inline-block';
-        };
-        reader.readAsDataURL(file);
-    });
+function handleUpload(input, previewId, textId) {
+    const file = input.files[0];
+    if (!file) return;
+    const name = file.name.length > 22 ? file.name.substring(0, 20) + '…' : file.name;
+    document.getElementById(textId).textContent = name;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = document.getElementById(previewId);
+        img.src = e.target.result;
+        img.style.display = 'inline-block';
+    };
+    reader.readAsDataURL(file);
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    setupUpload('productFile', 'productPreview', 'productUploadText');
-    setupUpload('modelFile', 'modelPreview', 'modelUploadText');
-});
 
 function cycleLoader() {
     let idx = 0;
