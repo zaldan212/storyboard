@@ -429,6 +429,60 @@
         display: none;
     }
 
+    /* Export & Copy Buttons */
+    .export-btn {
+        width: auto;
+        background: transparent;
+        border: 1px solid var(--purple);
+        color: var(--purple);
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: 0.2s;
+    }
+    .export-btn:hover {
+        background: rgba(169,86,214,0.1);
+        transform: translateY(-1px);
+    }
+    .export-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+    .prompt-tool-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+    .prompt-tool-row .prompt-tool {
+        margin-bottom: 0;
+    }
+    .copy-btn {
+        width: auto;
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: 0.2s;
+    }
+    .copy-btn:hover {
+        border-color: var(--blue);
+        color: var(--blue);
+    }
+    .copy-btn.copied {
+        border-color: #4ade80;
+        color: #4ade80;
+    }
+
     @media (max-width: 900px) {
         .grid { grid-template-columns: 1fr; }
         .container { padding: 20px 16px; }
@@ -499,6 +553,9 @@
             <div class="output-body" id="outputBody">
                 <div class="campaign-meta" id="campaignMeta"></div>
 
+                <div style="display:flex; justify-content:flex-end; margin-bottom:16px;">
+                    <button class="export-btn" onclick="exportPDF()" id="exportBtn">⬇ Export PDF</button>
+                </div>
                 <p class="section-label">🎞️ Visual Flow</p>
                 <div class="timeline" id="timeline"></div>
 
@@ -751,14 +808,163 @@ function renderOutput(data, meta) {
         { tool: 'Midjourney / VEO 3', text: p.midjourney },
         { tool: 'Runway Gen-3 / Kling AI', text: p.runway },
         { tool: 'Stable Diffusion', text: p.stable_diffusion }
-    ].map(({ tool, text }) => `
+    ].map(({ tool, text }, i) => `
         <div class="prompt-block">
-            <div class="prompt-tool">— ${tool} —</div>
+            <div class="prompt-tool-row">
+                <div class="prompt-tool">— ${tool} —</div>
+                <button class="copy-btn" onclick="copyPrompt(this, ${i})" data-text="${text.replace(/"/g,'&quot;')}">Copy</button>
+            </div>
             <div class="prompt-text">${text}</div>
         </div>
     `).join('');
 
     setUI('output');
+}
+
+function copyPrompt(btn, idx) {
+    const text = btn.getAttribute('data-text');
+    navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✓ Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+        }, 2000);
+    }).catch(() => {
+        // Fallback
+        const el = document.createElement('textarea');
+        el.value = text;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        btn.textContent = '✓ Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+        }, 2000);
+    });
+}
+
+function exportPDF() {
+    const btn = document.getElementById('exportBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Preparing...';
+
+    // Load jsPDF from CDN
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.onload = () => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+        const margin = 15;
+        const pageW = 210;
+        const contentW = pageW - margin * 2;
+        let y = 20;
+
+        const addText = (text, size, bold, color) => {
+            doc.setFontSize(size);
+            doc.setFont('helvetica', bold ? 'bold' : 'normal');
+            if (color) doc.setTextColor(...color);
+            else doc.setTextColor(30, 30, 30);
+            const lines = doc.splitTextToSize(String(text || ''), contentW);
+            lines.forEach(line => {
+                if (y > 275) { doc.addPage(); y = 20; }
+                doc.text(line, margin, y);
+                y += size * 0.45;
+            });
+            y += 2;
+        };
+
+        const addDivider = () => {
+            if (y > 275) { doc.addPage(); y = 20; }
+            doc.setDrawColor(200, 200, 200);
+            doc.line(margin, y, pageW - margin, y);
+            y += 5;
+        };
+
+        // Header
+        doc.setFillColor(21, 21, 26);
+        doc.rect(0, 0, 210, 18, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Master Storyboard AI', margin, 12);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Powered by Claude', 155, 12);
+        y = 28;
+
+        // Campaign Meta
+        const metaTags = document.querySelectorAll('#campaignMeta .meta-tag');
+        metaTags.forEach(tag => {
+            addText(tag.textContent, 9, false, [100, 100, 150]);
+        });
+        y += 3;
+        addDivider();
+
+        // Scenes
+        addText('SCENE BREAKDOWN', 11, true, [75, 131, 244]);
+        y += 2;
+
+        document.querySelectorAll('#scenesGrid .scene-card').forEach((card, i) => {
+            if (y > 260) { doc.addPage(); y = 20; }
+            const num = card.querySelector('.scene-num')?.textContent || '';
+            const title = card.querySelector('.scene-title')?.textContent || '';
+            const desc = card.querySelector('.scene-desc')?.textContent || '';
+            const dir = card.querySelectorAll('.scene-desc')[1]?.textContent || '';
+            const dur = card.querySelector('.scene-duration')?.textContent || '';
+
+            addText(`${num} — ${title}`, 10, true, [169, 86, 214]);
+            if (desc) addText(desc, 9, false);
+            if (dir) addText(dir, 8, false, [100, 120, 168]);
+            if (dur) addText(dur, 8, false, [75, 131, 244]);
+            y += 3;
+        });
+
+        addDivider();
+
+        // Voice Over
+        addText('VOICE OVER SCRIPT', 11, true, [75, 131, 244]);
+        y += 2;
+        const vo = document.getElementById('voiceBox')?.textContent || '';
+        addText(vo, 9, false, [80, 100, 180]);
+        y += 3;
+        addDivider();
+
+        // Prompts
+        addText('PROMPT STUDIO', 11, true, [75, 131, 244]);
+        y += 2;
+        document.querySelectorAll('#promptsBox .prompt-block').forEach(block => {
+            const tool = block.querySelector('.prompt-tool')?.textContent || '';
+            const text = block.querySelector('.prompt-text')?.textContent || '';
+            addText(tool, 9, true, [232, 90, 113]);
+            addText(text, 8, false, [80, 120, 80]);
+            y += 3;
+        });
+
+        // Footer
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(7);
+            doc.setTextColor(150, 150, 150);
+            doc.text(`Master Storyboard AI — Page ${i} of ${pageCount}`, margin, 290);
+            doc.text(new Date().toLocaleDateString('id-ID'), pageW - margin, 290, { align: 'right' });
+        }
+
+        doc.save('storyboard-zaldan-ai.pdf');
+        btn.disabled = false;
+        btn.textContent = '⬇ Export PDF';
+    };
+    script.onerror = () => {
+        btn.disabled = false;
+        btn.textContent = '⬇ Export PDF';
+        alert('Gagal load library PDF. Cek koneksi internet kamu.');
+    };
+    document.head.appendChild(script);
 }
 
 function setUI(state) {
